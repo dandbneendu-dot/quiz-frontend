@@ -1,0 +1,77 @@
+:root {
+  /* Main brand palette */
+  --color-primary: #8B1A3A;
+  --color-primary-dark: #6E1430;
+  --color-primary-light: #FDEEF2;
+  --color-primary-soft: #FFF0F4;
+
+  /* Accent palette */
+  --color-pink: #C2185B;
+  --color-pink-dark: #9B1348;
+  --color-yellow: #F5D06E;
+  --color-green: #2E8B57;
+  --color-gold: #FFD700;
+  --color-coral: #FF6B6B;
+  --color-sky: #87CEEB;
+  --color-lavender: #E6A8D7;
+  --color-mint: #98E8C1;
+
+  /* Backgrounds */
+  --color-page-bg: #FDF8F9;
+  --color-card-bg: #FFFFFF;
+  --color-input-bg: #FEFAFB;
+  --color-selected-bg: #FDF0F3;
+  --color-secondary-bg: #FCEDF1;
+  --color-purple-bg: #FCE8EE;
+  --color-option-letter-bg: #F8EEF1;
+  --color-rank-bg: #F5E6EB;
+
+  /* Text */
+  --color-text: #3E2028;
+  --color-heading: #3B1A24;
+  --color-text-dark: #472730;
+  --color-text-secondary: #86636D;
+  --color-text-muted: #977983;
+  --color-text-light: #9F8690;
+  --color-text-purple: #8B1A3A;
+  --color-text-purple-dark: #7A1633;
+  --color-text-purple-soft: #9E6B7A;
+  --color-text-purple-number: #936070;
+  --color-text-white: #FFFFFF;
+  --color-hero-light: #FFF5F7;
+  --color-hero-pink: #FFD6E2;
+
+  /* Options */
+  --color-option-text: #5F3D47;
+  --color-option-border: #F3E0E5;
+
+  /* Borders */
+  --color-border: #F0DDE3;
+  --color-border-light: #F2E4E8;
+  --color-border-input: #EACFD7;
+  --color-border-purple: #F0D0DA;
+  --color-border-selected: #B5325A;
+  --color-border-hover: #D98FA4;
+  --color-border-circle: #F0C4D2;
+
+  /* Error and success */
+  --color-error: #A3273A;
+  --color-error-bg: #FFF0F2;
+  --color-success: #2E8B57;
+
+  /* Decorative */
+  --color-heart: #C2185B;
+  --color-confetti-1: #FF6B6B;
+  --color-confetti-2: #FFD700;
+  --color-confetti-3: #87CEEB;
+  --color-confetti-4: #98E8C1;
+  --color-confetti-5: #E6A8D7;
+  --color-confetti-6: #FF9A5C;
+
+  /* Shadows and focus rings */
+  --shadow-hero: rgba(139, 26, 58, 0.25);
+  --shadow-card: rgba(62, 20, 35, 0.08);
+  --shadow-focus: rgba(139, 26, 58, 0.14);
+  --shadow-glow: rgba(139, 26, 58, 0.12);
+  --color-focus-outline: #D98FA4;
+}
