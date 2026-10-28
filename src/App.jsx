@@ -153,14 +153,14 @@ function App() {
     const cleanLast = lastName.trim();
 
     if (!cleanFirst) {
-      setError("Please enter your first name.");
+      setError("Please enter your Table Number.");
       return;
     }
 
-    if (!cleanLast) {
-      setError("Please enter your last name.");
-      return;
-    }
+    // if (!cleanLast) {
+    //   setError("Please enter your last name.");
+    //   return;
+    // }
 
     const fullName = `${cleanFirst} ${cleanLast}`.trim();
 
@@ -393,8 +393,8 @@ function App() {
           </h1>
 
           <p>
-            How well do you know birthdays? Take the quiz, test your
-            knowledge, and see your name on the leaderboard! 🥳
+           🥳 Ready for the Birthday Quiz Challenge? 
+           Choose one player from your table, answer the questions, and see if your table can top the leaderboard! 🏆
           </p>
 
           {!isLeaderboardPage && (
@@ -427,13 +427,35 @@ function App() {
             <div className="welcome-confetti" aria-hidden="true">🎈 ✨ 🎁 ✨ 🎈</div>
             <div className="welcome-icon" aria-hidden="true">🎂</div>
             <p className="eyebrow">🎀 BEFORE WE BEGIN 🎀</p>
-            <h2>What should we call you?</h2>
+            <h2>Which Table Are You From?</h2>
             <p className="welcome-description">
-              Enter your name below to unlock the birthday challenge.
+              Enter your table number below to join the birthday challenge and compete for the top spot on the leaderboard! 🏆
             </p>
             <form className="welcome-form" onSubmit={startQuiz}>
               <div className="name-inputs-grid">
-                <div className="name-field-group">
+                
+                <div className="name-field-group table-number-group">
+  <label className="field-label" htmlFor="welcome-first-name">
+    Table Number
+  </label>
+  <input
+    id="welcome-first-name"
+    className="name-input welcome-name-input"
+    type="number"
+    placeholder="Enter table number..."
+    value={firstName}
+    maxLength={25}
+    onChange={(event) => {
+      setFirstName(event.target.value);
+      if (error) setError("");
+    }}
+    autoComplete="off"
+    autoFocus
+    required
+  />
+</div>
+
+                {/* <div className="name-field-group">
                   <label className="field-label" htmlFor="welcome-first-name">First name</label>
                   <input
                     id="welcome-first-name"
@@ -468,7 +490,7 @@ function App() {
                     autoComplete="family-name"
                     required
                   />
-                </div>
+                </div> */}
               </div>
 
               {error && <p className="error-message" role="alert">⚠️ {error}</p>}
@@ -477,7 +499,7 @@ function App() {
               </button>
             </form>
             <p className="welcome-footnote">
-              ✨ Ready, {firstName.trim() ? `${firstName.trim()}!` : "birthday star?"} Your fun starts here!
+              ✨ Ready Table, {firstName.trim() ? `${firstName.trim()}!` : "birthday star?"} Let the birthday challenge begin!
             </p>
           </section>
         )}
@@ -603,13 +625,21 @@ function App() {
                   </div>
                 )}
 
-                {result && (
-                  <p>
-                    You scored{" "}
-                    {Math.round((result.score / result.total) * 100)}%!
-                    🥳 Your result has been saved to the shared leaderboard.
-                  </p>
-                )}
+               {result && (
+  <p>
+    {(() => {
+      const percentage = result.total
+        ? Math.round((result.score / result.total) * 100)
+        : 0;
+
+      return percentage === 100
+        ? "Amazing! Your table knows our birthday star so well! 🏆🎉"
+        : percentage >= 60
+        ? "Great effort! Your table is in the birthday challenge! 🥳"
+        : "Nice try! Every answer makes this birthday more fun! 🎂";
+    })()}
+  </p>
+)}
 
                 <div className="result-party-row" aria-hidden="true">
                   <span>🍰</span>
@@ -642,11 +672,7 @@ function App() {
 
         {isLeaderboardPage && (
           <>
-            <section className="leaderboard-page-heading">
-              <p className="eyebrow">🏆 THE RESULTS ARE IN 🏆</p>
-              <h2>Birthday Quiz Leaderboard</h2>
-              <p>See the best scores from everyone who has played!</p>
-            </section>
+           
 
             <div
               className="content-grid leaderboard-page-grid"
