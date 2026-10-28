@@ -302,16 +302,21 @@ function App() {
   /* ---------------- Loading state ---------------- */
   if (loading) {
     return (
-      <main className="page-shell">
-        <div className="loading-card" style={{ padding: 0, overflow: "hidden" }}>
-          <div className="loading-skeleton">
-            <div className="skeleton-emoji" aria-hidden="true">🎂</div>
-            <div className="skeleton-line" />
-            <div className="skeleton-line" />
-            <div className="skeleton-line" />
-            <div className="skeleton-line" />
-            <div className="skeleton-line" />
-            <div className="skeleton-line" />
+      <main className="page-shell loading-page">
+        <div className="loading-card loading-party">
+          <div className="loading-orbit-container">
+            <div className="orbit-ring">
+              <div className="orbit-item orbit-1">🎈</div>
+              <div className="orbit-item orbit-2">✨</div>
+              <div className="orbit-item orbit-3">🎁</div>
+              <div className="orbit-item orbit-4">🎉</div>
+            </div>
+            <div className="loading-center-icon">🎂</div>
+          </div>
+          <h2 className="loading-text">Baking the birthday quiz...</h2>
+          <p className="loading-subtext">Get ready to celebrate! 🎈</p>
+          <div className="loading-progress">
+            <div className="loading-progress-fill"></div>
           </div>
         </div>
       </main>
