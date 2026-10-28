@@ -259,67 +259,67 @@ function App() {
     loadScores();
   }
 
-  
-if (loading) {
-  return (
-    <main className="loading-screen">
-      <div className="loading-confetti" aria-hidden="true">
-        <span>🎈</span>
-        <span>✨</span>
-        <span>🎁</span>
-        <span>🎉</span>
-        <span>⭐</span>
-        <span>🎀</span>
-        <span>✨</span>
-        <span>🎈</span>
-      </div>
 
-      <section className="birthday-loading-card">
-        <div className="loading-decoration loading-decoration-left" aria-hidden="true">
-          🎈
-        </div>
-        <div className="loading-decoration loading-decoration-right" aria-hidden="true">
-          🎁
+  if (loading) {
+    return (
+      <main className="loading-screen">
+        <div className="loading-confetti" aria-hidden="true">
+          <span>🎈</span>
+          <span>✨</span>
+          <span>🎁</span>
+          <span>🎉</span>
+          <span>⭐</span>
+          <span>🎀</span>
+          <span>✨</span>
+          <span>🎈</span>
         </div>
 
-        <div className="loading-cake-wrap">
-          <div className="loading-cake-glow"></div>
-          <span className="loading-cake" aria-hidden="true">
-            🎂
-          </span>
-        </div>
+        <section className="birthday-loading-card">
+          <div className="loading-decoration loading-decoration-left" aria-hidden="true">
+            🎈
+          </div>
+          <div className="loading-decoration loading-decoration-right" aria-hidden="true">
+            🎁
+          </div>
 
-        <p className="loading-eyebrow">✨ GETTING THE PARTY READY ✨</p>
+          <div className="loading-cake-wrap">
+            <div className="loading-cake-glow"></div>
+            <span className="loading-cake" aria-hidden="true">
+              🎂
+            </span>
+          </div>
 
-        <h1 className="loading-title">
-          Birthday <span>Quiz!</span>
-        </h1>
+          <p className="loading-eyebrow">✨ GETTING THE PARTY READY ✨</p>
 
-        <p className="loading-message">
-          Preparing your birthday challenge...
-        </p>
+          <h1 className="loading-title">
+            Birthday <span>Quiz!</span>
+          </h1>
 
-        <div
-          className="loading-progress"
-          role="progressbar"
-          aria-label="Loading birthday quiz"
-        >
-          <div className="loading-progress-fill"></div>
-        </div>
+          <p className="loading-message">
+            Preparing your birthday challenge...
+          </p>
 
-        <div className="loading-dots" aria-label="Loading">
-          <span></span>
-          <span></span>
-          <span></span>
-        </div>
+          <div
+            className="loading-progress"
+            role="progressbar"
+            aria-label="Loading birthday quiz"
+          >
+            <div className="loading-progress-fill"></div>
+          </div>
 
-        <p className="loading-footer">
-          A little fun is on its way! 🥳
-        </p>
-      </section>
-    </main>
-  );
-}
+          <div className="loading-dots" aria-label="Loading">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+
+          <p className="loading-footer">
+            A little fun is on its way! 🥳
+          </p>
+        </section>
+      </main>
+    );
+  }
 
 
   return (
@@ -397,17 +397,17 @@ if (loading) {
             knowledge, and see your name on the leaderboard! 🥳
           </p>
 
-{!isLeaderboardPage && (
-  <div className="hero-actions">
-    <button
-      type="button"
-      className="leaderboard-nav-button"
-      onClick={goToLeaderboard}
-    >
-      🏆 View Leaderboard
-    </button>
-  </div>
-)}
+          {!isLeaderboardPage && (
+            <div className="hero-actions">
+              <button
+                type="button"
+                className="leaderboard-nav-button"
+                onClick={goToLeaderboard}
+              >
+                🏆 View Leaderboard
+              </button>
+            </div>
+          )}
 
           <div className="hero-decoration" aria-hidden="true">
             <span>🎂</span>{" "}
@@ -419,7 +419,7 @@ if (loading) {
             <span>🍰</span>
           </div>
 
-          
+
         </header>
 
         {isWelcomePage && (
@@ -531,9 +531,8 @@ if (loading) {
                         return (
                           <label
                             key={optionIndex}
-                            className={`option-card ${
-                              selected ? "selected" : ""
-                            }`}
+                            className={`option-card ${selected ? "selected" : ""
+                              }`}
                           >
                             <input
                               type="radio"
@@ -620,22 +619,22 @@ if (loading) {
                   <span>🍰</span>
                 </div>
 
-               <div className="result-actions-row">
-  <button
-    className="primary-button"
-    onClick={playAgain}
-  >
-    🎈 Take the quiz again 🎈
-  </button>
+                <div className="result-actions-row">
+                  <button
+                    className="primary-button"
+                    onClick={playAgain}
+                  >
+                    🎈 Take the quiz again 🎈
+                  </button>
 
-  <button
-    className="leaderboard-nav-button result-leaderboard-button"
-    type="button"
-    onClick={goToLeaderboard}
-  >
-    🏆 View Leaderboard
-  </button>
-</div>
+                  <button
+                    className="leaderboard-nav-button result-leaderboard-button"
+                    type="button"
+                    onClick={goToLeaderboard}
+                  >
+                    🏆 View Leaderboard
+                  </button>
+                </div>
               </div>
             </section>
           </div>
@@ -694,32 +693,32 @@ if (loading) {
                     {[...scores]
                       .sort((a, b) => Number(b.score) - Number(a.score))
                       .map((player, index) => (
-                      <li
-                        className="leaderboard-row"
-                        key={player.id ?? `${player.name}-${player.createdAt ?? index}`}
-                      >
-                        <span className="rank">
-                          {index === 0
-                            ? "🥇"
-                            : index === 1
-                              ? "🥈"
-                              : index === 2
-                                ? "🥉"
-                                : `#${index + 1}`}
-                        </span>
+                        <li
+                          className="leaderboard-row"
+                          key={player.id ?? `${player.name}-${player.createdAt ?? index}`}
+                        >
+                          <span className="rank">
+                            {index === 0
+                              ? "🥇"
+                              : index === 1
+                                ? "🥈"
+                                : index === 2
+                                  ? "🥉"
+                                  : `#${index + 1}`}
+                          </span>
 
-                        <span className="player-info">
-                          <strong>{player.name}</strong>
-                          <small>
-                            {new Date(player.createdAt).toLocaleDateString()}
-                          </small>
-                        </span>
+                          <span className="player-info">
+                            <strong>{player.name}</strong>
+                            <small>
+                              {new Date(player.createdAt).toLocaleDateString()}
+                            </small>
+                          </span>
 
-                        <span className="player-score">
-                          {player.score}/{player.total}
-                        </span>
-                      </li>
-                    ))}
+                          <span className="player-score">
+                            {player.score}/{player.total}
+                          </span>
+                        </li>
+                      ))}
                   </ol>
                 )}
 
