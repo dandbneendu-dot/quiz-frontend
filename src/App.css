@@ -1998,3 +1998,36 @@ body {
     flex: auto;
   }
 }
+
+
+.name-inputs-grid {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.table-number-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+.table-number-group .field-label {
+  display: block;
+  width: 100%;
+  text-align: center;
+}
+
+.table-number-group .welcome-name-input {
+  display: block;
+  width: 100%;
+  max-width: 320px;
+  box-sizing: border-box;
+  text-align: center;
+  margin: 0 auto;
+}
