@@ -123,7 +123,7 @@ function App() {
     return () => window.removeEventListener("popstate", syncRoute);
   }, [loadScores]);
 
-  Automatically refresh the leaderboard every 1 second while it is open.
+  //Automatically refresh the leaderboard every 1 second while it is open.
     useEffect(() => {
       if (!isLeaderboardPage) return;
 
