@@ -47,7 +47,7 @@ function App() {
     try {
       setLeaderboardError("");
 
-      const response = await fetch(`${API_URL}/scores`);
+      const response = await fetch(`${API_URL}/api/scores`);
 
       if (!response.ok) {
         throw new Error("Could not load leaderboard.");
@@ -101,7 +101,7 @@ function App() {
       }
 
       try {
-        const response = await fetch(`${API_URL}/questions`);
+        const response = await fetch(`${API_URL}/api/questions`);
 
         if (!response.ok) {
           throw new Error("Could not load questions.");
@@ -122,6 +122,21 @@ function App() {
 
     return () => window.removeEventListener("popstate", syncRoute);
   }, [loadScores]);
+
+  // Automatically refresh the leaderboard every 1 second while it is open.
+  useEffect(() => {
+    if (!isLeaderboardPage) return;
+
+    // Fetch the latest scores immediately when the leaderboard opens.
+    loadScores();
+
+    const interval = setInterval(() => {
+      loadScores();
+    }, 1000);
+
+    // Stop polling when the user leaves the leaderboard page.
+    return () => clearInterval(interval);
+  }, [isLeaderboardPage, loadScores]);
 
   function chooseAnswer(questionId, optionIndex, questionIndex) {
     setAnswers((current) => ({
@@ -206,7 +221,7 @@ function App() {
     setSubmitting(true);
 
     try {
-      const response = await fetch(`${API_URL}/scores`, {
+      const response = await fetch(`${API_URL}/api/scores`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -650,12 +665,12 @@ function App() {
                 </div>
 
                 <div className="result-actions-row">
-                  <button
-                    className="primary-button"
-                    onClick={playAgain}
-                  >
-                    🎈 Take the quiz again 🎈
-                  </button>
+                    {/* <button
+                      className="primary-button"
+                      onClick={playAgain}
+                    >
+                      🎈 Take the quiz again 🎈
+                    </button> */}
 
                   <button
                     className="leaderboard-nav-button result-leaderboard-button"
