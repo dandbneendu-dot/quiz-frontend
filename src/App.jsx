@@ -124,19 +124,19 @@ function App() {
   }, [loadScores]);
 
   // Automatically refresh the leaderboard every 1 second while it is open.
-  useEffect(() => {
-    if (!isLeaderboardPage) return;
+    // useEffect(() => {
+    //   if (!isLeaderboardPage) return;
 
-    // Fetch the latest scores immediately when the leaderboard opens.
-    loadScores();
+    //   // Fetch the latest scores immediately when the leaderboard opens.
+    //   loadScores();
 
-    const interval = setInterval(() => {
-      loadScores();
-    }, 1000);
+    //   const interval = setInterval(() => {
+    //     loadScores();
+    //   }, 5000);
 
-    // Stop polling when the user leaves the leaderboard page.
-    return () => clearInterval(interval);
-  }, [isLeaderboardPage, loadScores]);
+    //   // Stop polling when the user leaves the leaderboard page.
+    //   return () => clearInterval(interval);
+    // }, [isLeaderboardPage, loadScores]);
 
   function chooseAnswer(questionId, optionIndex, questionIndex) {
     setAnswers((current) => ({
