@@ -37,6 +37,7 @@ function App() {
   const [error, setError] = useState("");
   const [leaderboardError, setLeaderboardError] = useState("");
   const [showIncompletePopup, setShowIncompletePopup] = useState(false);
+  const [showAlreadyPlayedPopup, setShowAlreadyPlayedPopup] = useState(false);
 
   const isLeaderboardPage = currentPath === "/leaderboard";
   const isResultPage = currentPath === "/result" || (Boolean(result) && currentPath !== "/leaderboard" && currentPath !== "/");
@@ -181,6 +182,23 @@ function App() {
 
     if (fullName.length > 40) {
       setError("Your full name must be 40 characters or fewer.");
+      return;
+    }
+
+    const tableAlreadyAdded = scores.some((entry) => {
+      const entryName = (entry.name || "").trim().toLowerCase();
+      const targetFirst = cleanFirst.toLowerCase();
+      const targetFull = fullName.toLowerCase();
+      return (
+        entryName === targetFirst ||
+        entryName === targetFull ||
+        entryName === "table " + targetFirst ||
+        entryName.split(" ")[0] === targetFirst
+      );
+    });
+
+    if (tableAlreadyAdded) {
+      setShowAlreadyPlayedPopup(true);
       return;
     }
 
@@ -821,6 +839,51 @@ function App() {
             >
               Continue Quiz ✨
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Popup for Table Number Already Played */}
+      {showAlreadyPlayedPopup && (
+        <div className="modal-backdrop" onClick={() => setShowAlreadyPlayedPopup(false)}>
+          <div
+            className="modal-box"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="already-played-popup-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-icon" aria-hidden="true">
+              🚫 🍽️
+            </div>
+            <h3 id="already-played-popup-title">Table Already Played!</h3>
+            <p className="modal-message">
+              Table {firstName.trim()} has already participated in the quiz.
+            </p>
+            <p className="modal-progress-hint">
+              Each table is only allowed to play once. You can check your table's ranking on the leaderboard! 🏆
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px", width: "100%" }}>
+              <button
+                className="primary-button modal-btn"
+                type="button"
+                autoFocus
+                onClick={() => {
+                  setShowAlreadyPlayedPopup(false);
+                  goToLeaderboard();
+                }}
+              >
+                🏆 View Leaderboard
+              </button>
+              <button
+                className="leaderboard-nav-button"
+                type="button"
+                style={{ width: "100%", justifyContent: "center" }}
+                onClick={() => setShowAlreadyPlayedPopup(false)}
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}
