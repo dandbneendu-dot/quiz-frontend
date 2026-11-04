@@ -34,6 +34,8 @@ function App() {
   });
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [starting, setStarting] = useState(false);
+  const [reservationToken, setReservationToken] = useState(() => sessionStorage.getItem("birthdayQuizReservationToken") || "");
   const [error, setError] = useState("");
   const [leaderboardError, setLeaderboardError] = useState("");
   const [showIncompletePopup, setShowIncompletePopup] = useState(false);
@@ -82,7 +84,8 @@ function App() {
       }
 
       // If user navigates directly to /quiz without entering a name, redirect to welcome
-      if (path === "/quiz" && !savedName.trim()) {
+      const savedReservationToken = sessionStorage.getItem("birthdayQuizReservationToken") || "";
+      if (path === "/quiz" && (!savedName.trim() || !savedReservationToken)) {
         window.history.replaceState({}, "", "/");
         setCurrentPath("/");
         return;
@@ -163,7 +166,7 @@ function App() {
     }, 280);
   }
 
-  function startQuiz(event) {
+  async function startQuiz(event) {
     event.preventDefault();
     const cleanFirst = firstName.trim();
     const cleanLast = lastName.trim();
@@ -202,16 +205,49 @@ function App() {
       return;
     }
 
-    setName(fullName);
-    setFirstName(cleanFirst);
-    setLastName(cleanLast);
-    sessionStorage.setItem("birthdayQuizFirstName", cleanFirst);
-    sessionStorage.setItem("birthdayQuizLastName", cleanLast);
-    sessionStorage.setItem("birthdayQuizName", fullName);
-    if (questions.length > 0) setError("");
-    window.history.pushState({}, "", "/quiz");
-    setCurrentPath("/quiz");
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    setStarting(true);
+    setError("");
+
+    try {
+      const response = await fetch(`${API_URL}/api/reservations`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ tableNumber: cleanFirst }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 409) {
+          setShowAlreadyPlayedPopup(true);
+          return;
+        }
+        throw new Error(data.error || "Could not reserve your table. Please try again.");
+      }
+
+      if (!data.reservationToken) {
+        throw new Error("The server did not return a reservation token. Please try again.");
+      }
+
+      setReservationToken(data.reservationToken);
+      sessionStorage.setItem("birthdayQuizReservationToken", data.reservationToken);
+      setName(fullName);
+      setFirstName(cleanFirst);
+      setLastName(cleanLast);
+      sessionStorage.setItem("birthdayQuizFirstName", cleanFirst);
+      sessionStorage.setItem("birthdayQuizLastName", cleanLast);
+      sessionStorage.setItem("birthdayQuizName", fullName);
+      if (questions.length > 0) setError("");
+      window.history.pushState({}, "", "/quiz");
+      setCurrentPath("/quiz");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (err) {
+      setError(err.message || "Could not reserve your table. Please try again.");
+    } finally {
+      setStarting(false);
+    }
   }
 
   async function submitQuiz(event) {
@@ -236,6 +272,12 @@ function App() {
       return;
     }
 
+    const activeReservationToken = reservationToken || sessionStorage.getItem("birthdayQuizReservationToken") || "";
+    if (!activeReservationToken) {
+      setError("Your table reservation is missing or has expired. Please return to the welcome page and start again.");
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -246,6 +288,8 @@ function App() {
         },
         body: JSON.stringify({
           name: cleanName,
+          tableNumber: firstName.trim(),
+          reservationToken: activeReservationToken,
           answers,
         }),
       });
@@ -253,11 +297,17 @@ function App() {
       const data = await response.json();
 
       if (!response.ok) {
+        if (response.status === 401 || response.status === 403 || response.status === 404) {
+          sessionStorage.removeItem("birthdayQuizReservationToken");
+          setReservationToken("");
+        }
         throw new Error(data.error || "Could not submit your quiz.");
       }
 
       setResult(data.result);
       sessionStorage.setItem("birthdayQuizResult", JSON.stringify(data.result));
+      sessionStorage.removeItem("birthdayQuizReservationToken");
+      setReservationToken("");
       window.history.pushState({}, "", "/result");
       setCurrentPath("/result");
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -276,6 +326,8 @@ function App() {
     sessionStorage.removeItem("birthdayQuizFirstName");
     sessionStorage.removeItem("birthdayQuizLastName");
     sessionStorage.removeItem("birthdayQuizResult");
+    sessionStorage.removeItem("birthdayQuizReservationToken");
+    setReservationToken("");
     setCurrentPath("/");
     setAnswers({});
     setResult(null);
@@ -527,8 +579,8 @@ function App() {
               </div>
 
               {error && <p className="error-message" role="alert">⚠️ {error}</p>}
-              <button className="primary-button welcome-start-button" type="submit">
-                Start the Birthday Quiz <span aria-hidden="true">🎉</span>
+              <button className="primary-button welcome-start-button" type="submit" disabled={starting}>
+                {starting ? "Reserving your table..." : "Start the Birthday Quiz"} <span aria-hidden="true">🎉</span>
               </button>
             </form>
             <p className="welcome-footnote">
@@ -856,12 +908,12 @@ function App() {
             <div className="modal-icon" aria-hidden="true">
               🚫 🍽️
             </div>
-            <h3 id="already-played-popup-title">Table Already Played!</h3>
+            <h3 id="already-played-popup-title">Table Unavailable!</h3>
             <p className="modal-message">
-              Table {firstName.trim()} has already participated in the quiz.
+              Table {firstName.trim()} has already submitted a score or another player is currently using it.
             </p>
             <p className="modal-progress-hint">
-              Each table is only allowed to play once. You can check your table's ranking on the leaderboard! 🏆
+              Each table can participate only once. If someone is currently playing, please wait until their quiz is completed or their 30-minute reservation expires. You can also check the leaderboard! 🏆
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: "10px", width: "100%" }}>
               <button
