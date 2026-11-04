@@ -913,7 +913,7 @@ function App() {
               Table {firstName.trim()} has already submitted a score or another player is currently using it.
             </p>
             <p className="modal-progress-hint">
-              Each table can participate only once. If someone is currently playing, please wait until their quiz is completed or their 30-minute reservation expires. You can also check the leaderboard! 🏆
+              Each table can participate only once. Check the leaderboard! 🏆
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: "10px", width: "100%" }}>
               <button
