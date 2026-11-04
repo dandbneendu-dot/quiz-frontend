@@ -2031,3 +2031,100 @@ body {
   text-align: center;
   margin: 0 auto;
 }
+
+/* FIXED MOBILE QUIZ TIMER */
+.quiz-timer {
+  position: fixed !important;
+  top: max(12px, env(safe-area-inset-top)) !important;
+  right: 12px !important;
+  left: auto !important;
+  bottom: auto !important;
+
+  z-index: 100000 !important;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-width: 90px;
+  padding: 11px 17px;
+
+  background: #800020;
+  color: #ffffff;
+
+  border: 2px solid #D4AF6A;
+  border-radius: 30px;
+
+  font-size: 16px;
+  font-weight: 800;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+
+  pointer-events: none;
+}
+
+.quiz-timer.timer-warning {
+  background: #d62828;
+  border-color: #ffffff;
+}
+
+/* Mobile positioning */
+@media (max-width: 600px) {
+  .quiz-timer {
+    top: max(10px, env(safe-area-inset-top)) !important;
+    right: 10px !important;
+    font-size: 15px;
+    padding: 10px 15px;
+  }
+}
+
+
+.quiz-expired-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(25, 0, 12, 0.94);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.quiz-expired-card {
+  width: 100%;
+  max-width: 430px;
+  padding: 35px 25px;
+  text-align: center;
+  background: #ffffff;
+  color: #333333;
+  border: 3px solid #d4af6a;
+  border-radius: 22px;
+  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.35);
+}
+
+.quiz-expired-icon {
+  font-size: 60px;
+  margin-bottom: 15px;
+}
+
+.quiz-expired-card h2 {
+  color: #8b1a3a;
+  font-size: 32px;
+  margin: 12px 0;
+}
+
+.quiz-expired-card p {
+  line-height: 1.6;
+}
+
+.quiz-expired-instruction {
+  font-weight: 700;
+  color: #8b1a3a;
+  margin: 20px 0;
+}
+
+.quiz-expired-card button {
+  width: 100%;
+  margin-top: 10px;
+}

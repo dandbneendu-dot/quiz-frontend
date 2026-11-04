@@ -1,28 +1,59 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import "./App.css";
 import API_URL from "./config";
+
+const QUIZ_DURATION = 5 * 1000;
+const QUIZ_DEADLINE_KEY = "birthdayQuizDeadline";
 
 function App() {
   const [questions, setQuestions] = useState([]);
   const [scores, setScores] = useState([]);
+
   const [firstName, setFirstName] = useState(() => {
     const saved = sessionStorage.getItem("birthdayQuizFirstName");
     if (saved) return saved;
+
     const full = sessionStorage.getItem("birthdayQuizName") || "";
     return full ? full.split(" ")[0] || "" : "";
   });
+
   const [lastName, setLastName] = useState(() => {
     const saved = sessionStorage.getItem("birthdayQuizLastName");
     if (saved) return saved;
+
     const full = sessionStorage.getItem("birthdayQuizName") || "";
     const parts = full.split(" ");
+
     return parts.length > 1 ? parts.slice(1).join(" ") : "";
   });
-  const [name, setName] = useState(() => sessionStorage.getItem("birthdayQuizName") || "");
-  const [currentPath, setCurrentPath] = useState(() => window.location.pathname.replace(/\/$/, "") || "/");
+
+  const [name, setName] = useState(
+    () => sessionStorage.getItem("birthdayQuizName") || ""
+  );
+
+  const [currentPath, setCurrentPath] = useState(
+    () => window.location.pathname.replace(/\/$/, "") || "/"
+  );
+
   const [answers, setAnswers] = useState({});
+
+  // Restore the remaining time when the page is refreshed.
+  const [timeLeft, setTimeLeft] = useState(() => {
+    const deadline = Number(
+      sessionStorage.getItem(QUIZ_DEADLINE_KEY)
+    );
+
+    if (!deadline) return 5;
+
+    return Math.max(
+      0,
+      Math.ceil((deadline - Date.now()) / 1000)
+    );
+  });
+
   const [result, setResult] = useState(() => {
     const savedResult = sessionStorage.getItem("birthdayQuizResult");
+
     if (savedResult) {
       try {
         return JSON.parse(savedResult);
@@ -30,21 +61,40 @@ function App() {
         sessionStorage.removeItem("birthdayQuizResult");
       }
     }
+
     return null;
   });
+
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [starting, setStarting] = useState(false);
-  const [reservationToken, setReservationToken] = useState(() => sessionStorage.getItem("birthdayQuizReservationToken") || "");
+  const [reservationToken, setReservationToken] = useState(
+    () => sessionStorage.getItem("birthdayQuizReservationToken") || ""
+  );
+
   const [error, setError] = useState("");
   const [leaderboardError, setLeaderboardError] = useState("");
   const [showIncompletePopup, setShowIncompletePopup] = useState(false);
   const [showAlreadyPlayedPopup, setShowAlreadyPlayedPopup] = useState(false);
 
+  // Prevent automatic submission from running more than once.
+  const autoSubmitStartedRef = useRef(false);
+
   const isLeaderboardPage = currentPath === "/leaderboard";
-  const isResultPage = currentPath === "/result" || (Boolean(result) && currentPath !== "/leaderboard" && currentPath !== "/");
+
+  const isResultPage =
+    currentPath === "/result" ||
+    (Boolean(result) &&
+      currentPath !== "/leaderboard" &&
+      currentPath !== "/");
+
   const isQuizPage = currentPath === "/quiz" && !isResultPage;
-  const isWelcomePage = !isLeaderboardPage && !isResultPage && !isQuizPage;
+
+  const isWelcomePage =
+    !isLeaderboardPage && !isResultPage && !isQuizPage;
+
+  // Keep the expired screen visible even after the result is saved.
+  const isTimeExpired = currentPath === "/quiz" && timeLeft <= 0;
 
   const loadScores = useCallback(async () => {
     try {
@@ -64,17 +114,28 @@ function App() {
     }
   }, []);
 
+  // Route handling and loading quiz questions.
   useEffect(() => {
     const syncRoute = () => {
-      const path = window.location.pathname.replace(/\/$/, "") || "/";
-      const savedName = sessionStorage.getItem("birthdayQuizName") || "";
-      const savedFirst = sessionStorage.getItem("birthdayQuizFirstName") || "";
-      const savedLast = sessionStorage.getItem("birthdayQuizLastName") || "";
-      const savedResult = sessionStorage.getItem("birthdayQuizResult");
+      const path =
+        window.location.pathname.replace(/\/$/, "") || "/";
+
+      const savedName =
+        sessionStorage.getItem("birthdayQuizName") || "";
+
+      const savedFirst =
+        sessionStorage.getItem("birthdayQuizFirstName") || "";
+
+      const savedLast =
+        sessionStorage.getItem("birthdayQuizLastName") || "";
+
+      const savedResult =
+        sessionStorage.getItem("birthdayQuizResult");
 
       if (savedName) setName(savedName);
       if (savedFirst) setFirstName(savedFirst);
       if (savedLast) setLastName(savedLast);
+
       if (savedResult) {
         try {
           setResult(JSON.parse(savedResult));
@@ -83,8 +144,10 @@ function App() {
         }
       }
 
-      // If user navigates directly to /quiz without entering a name, redirect to welcome
-      const savedReservationToken = sessionStorage.getItem("birthdayQuizReservationToken") || "";
+      // Redirect to welcome if there is no active reservation.
+      const savedReservationToken =
+        sessionStorage.getItem("birthdayQuizReservationToken") || "";
+
       if (path === "/quiz" && (!savedName.trim() || !savedReservationToken)) {
         window.history.replaceState({}, "", "/");
         setCurrentPath("/");
@@ -98,7 +161,9 @@ function App() {
     syncRoute();
 
     async function loadQuestions() {
-      const currentPath = window.location.pathname.replace(/\/$/, "") || "/";
+      const currentPath =
+        window.location.pathname.replace(/\/$/, "") || "/";
+
       if (currentPath === "/leaderboard") {
         setLoading(false);
         return;
@@ -127,47 +192,148 @@ function App() {
     return () => window.removeEventListener("popstate", syncRoute);
   }, [loadScores]);
 
-  //Automatically refresh the leaderboard every 1 second while it is open.
-    useEffect(() => {
-      if (!isLeaderboardPage) return;
+  // Automatically refresh the leaderboard while it is open.
+  useEffect(() => {
+    if (!isLeaderboardPage) return;
 
-      // Fetch the latest scores immediately when the leaderboard opens.
+    loadScores();
+
+    const interval = setInterval(() => {
       loadScores();
+    }, 5000);
 
-      const interval = setInterval(() => {
-        loadScores();
-      }, 5000);
+    return () => clearInterval(interval);
+  }, [isLeaderboardPage, loadScores]);
 
-      // Stop polling when the user leaves the leaderboard page.
-      return () => clearInterval(interval);
-    }, [isLeaderboardPage, loadScores]);
+  // Persistent five-minute countdown.
+  // The deadline remains saved when the page is refreshed.
+  useEffect(() => {
+    if (!isQuizPage) return;
 
-  function chooseAnswer(questionId, optionIndex, questionIndex) {
+    let deadline = Number(
+      sessionStorage.getItem(QUIZ_DEADLINE_KEY)
+    );
+
+    // Create a deadline if an active quiz has no saved deadline.
+    if (!deadline) {
+      deadline = Date.now() + QUIZ_DURATION;
+
+      sessionStorage.setItem(
+        QUIZ_DEADLINE_KEY,
+        String(deadline)
+      );
+    }
+
+    function updateTimer() {
+      const remaining = Math.max(
+        0,
+        Math.ceil((deadline - Date.now()) / 1000)
+      );
+
+      setTimeLeft(remaining);
+    }
+
+    updateTimer();
+
+    const timer = setInterval(updateTimer, 1000);
+
+    return () => clearInterval(timer);
+  }, [isQuizPage]);
+
+  // Select an answer without automatically scrolling.
+  function chooseAnswer(questionId, optionIndex) {
+    if (isTimeExpired) return;
+
     setAnswers((current) => ({
       ...current,
       [questionId]: optionIndex,
     }));
+  }
 
-    // Auto-scroll to the next question after a brief delay for visual touch feedback
-    setTimeout(() => {
-      const nextIndex = questionIndex + 1;
-      if (nextIndex < questions.length) {
-        const nextElem = document.getElementById(`question-block-${nextIndex}`);
-        if (nextElem) {
-          nextElem.scrollIntoView({ behavior: "smooth", block: "center" });
-        }
-      } else {
-        // If it was the final question, scroll smoothly to the submit button
-        const submitBtn = document.getElementById("quiz-submit-btn");
-        if (submitBtn) {
-          submitBtn.scrollIntoView({ behavior: "smooth", block: "center" });
-        }
+  // Automatically submit the answers selected before time expires.
+  const autoSubmitQuiz = useCallback(async () => {
+    if (submitting) return;
+
+    const activeReservationToken =
+      reservationToken ||
+      sessionStorage.getItem("birthdayQuizReservationToken") ||
+      "";
+
+    if (!activeReservationToken) {
+      setError("Your table reservation is missing. Please contact the event organiser.");
+      return;
+    }
+
+    setSubmitting(true);
+    setError("");
+
+    try {
+      const response = await fetch(`${API_URL}/api/scores`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: name.trim(),
+          tableNumber: firstName.trim(),
+          reservationToken: activeReservationToken,
+          answers,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error || "Could not automatically submit your quiz."
+        );
       }
-    }, 280);
+
+      setResult(data.result);
+
+      sessionStorage.setItem(
+        "birthdayQuizResult",
+        JSON.stringify(data.result)
+      );
+
+      // Clear the timer and reservation after successful submission.
+      sessionStorage.removeItem(QUIZ_DEADLINE_KEY);
+      sessionStorage.removeItem("birthdayQuizReservationToken");
+
+      setReservationToken("");
+      setError("");
+    } catch (err) {
+      setError(
+        err.message || "Automatic submission failed. Please try again."
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  }, [answers, firstName, name, reservationToken, submitting]);
+
+  // Trigger automatic submission when the timer reaches zero.
+  useEffect(() => {
+    if (
+      isTimeExpired &&
+      !autoSubmitStartedRef.current &&
+      !result
+    ) {
+      autoSubmitStartedRef.current = true;
+      autoSubmitQuiz();
+    }
+  }, [isTimeExpired, result, autoSubmitQuiz]);
+
+  // Allow the player to retry if automatic submission fails.
+  function retryAutoSubmit() {
+    if (submitting || result) return;
+
+    autoSubmitStartedRef.current = true;
+    autoSubmitQuiz();
   }
 
   async function startQuiz(event) {
     event.preventDefault();
+
     const cleanFirst = firstName.trim();
     const cleanLast = lastName.trim();
 
@@ -175,11 +341,6 @@ function App() {
       setError("Please enter your Table Number.");
       return;
     }
-
-    // if (!cleanLast) {
-    //   setError("Please enter your last name.");
-    //   return;
-    // }
 
     const fullName = `${cleanFirst} ${cleanLast}`.trim();
 
@@ -192,6 +353,7 @@ function App() {
       const entryName = (entry.name || "").trim().toLowerCase();
       const targetFirst = cleanFirst.toLowerCase();
       const targetFull = fullName.toLowerCase();
+
       return (
         entryName === targetFirst ||
         entryName === targetFull ||
@@ -224,27 +386,59 @@ function App() {
           setShowAlreadyPlayedPopup(true);
           return;
         }
-        throw new Error(data.error || "Could not reserve your table. Please try again.");
+
+        throw new Error(
+          data.error || "Could not reserve your table. Please try again."
+        );
       }
 
       if (!data.reservationToken) {
-        throw new Error("The server did not return a reservation token. Please try again.");
+        throw new Error(
+          "The server did not return a reservation token. Please try again."
+        );
       }
 
       setReservationToken(data.reservationToken);
-      sessionStorage.setItem("birthdayQuizReservationToken", data.reservationToken);
+
+      sessionStorage.setItem(
+        "birthdayQuizReservationToken",
+        data.reservationToken
+      );
+
       setName(fullName);
       setFirstName(cleanFirst);
       setLastName(cleanLast);
+
       sessionStorage.setItem("birthdayQuizFirstName", cleanFirst);
       sessionStorage.setItem("birthdayQuizLastName", cleanLast);
       sessionStorage.setItem("birthdayQuizName", fullName);
+
       if (questions.length > 0) setError("");
+
+      // Reset automatic submission for the new quiz.
+      autoSubmitStartedRef.current = false;
+
+      setAnswers({});
+      setResult(null);
+
+      // Start a fresh five-minute timer only after reservation succeeds.
+      const deadline = Date.now() + QUIZ_DURATION;
+
+      sessionStorage.setItem(
+        QUIZ_DEADLINE_KEY,
+        String(deadline)
+      );
+
+      setTimeLeft(5);
+
       window.history.pushState({}, "", "/quiz");
       setCurrentPath("/quiz");
+
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) {
-      setError(err.message || "Could not reserve your table. Please try again.");
+      setError(
+        err.message || "Could not reserve your table. Please try again."
+      );
     } finally {
       setStarting(false);
     }
@@ -252,6 +446,10 @@ function App() {
 
   async function submitQuiz(event) {
     event.preventDefault();
+
+    // Do not allow manual submission after the timer expires.
+    if (isTimeExpired) return;
+
     setError("");
 
     const cleanName = name.trim();
@@ -266,15 +464,24 @@ function App() {
       return;
     }
 
-    const unansweredIndex = questions.findIndex((q) => answers[q.id] === undefined);
+    const unansweredIndex = questions.findIndex(
+      (q) => answers[q.id] === undefined
+    );
+
     if (unansweredIndex !== -1) {
       setShowIncompletePopup(true);
       return;
     }
 
-    const activeReservationToken = reservationToken || sessionStorage.getItem("birthdayQuizReservationToken") || "";
+    const activeReservationToken =
+      reservationToken ||
+      sessionStorage.getItem("birthdayQuizReservationToken") ||
+      "";
+
     if (!activeReservationToken) {
-      setError("Your table reservation is missing or has expired. Please return to the welcome page and start again.");
+      setError(
+        "Your table reservation is missing or has expired. Please return to the welcome page and start again."
+      );
       return;
     }
 
@@ -297,19 +504,34 @@ function App() {
       const data = await response.json();
 
       if (!response.ok) {
-        if (response.status === 401 || response.status === 403 || response.status === 404) {
+        if (
+          response.status === 401 ||
+          response.status === 403 ||
+          response.status === 404
+        ) {
           sessionStorage.removeItem("birthdayQuizReservationToken");
           setReservationToken("");
         }
+
         throw new Error(data.error || "Could not submit your quiz.");
       }
 
       setResult(data.result);
-      sessionStorage.setItem("birthdayQuizResult", JSON.stringify(data.result));
+
+      sessionStorage.setItem(
+        "birthdayQuizResult",
+        JSON.stringify(data.result)
+      );
+
+      // Clear the timer after successful submission.
+      sessionStorage.removeItem(QUIZ_DEADLINE_KEY);
+
       sessionStorage.removeItem("birthdayQuizReservationToken");
       setReservationToken("");
+
       window.history.pushState({}, "", "/result");
       setCurrentPath("/result");
+
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) {
       setError(err.message || "Something went wrong.");
@@ -319,20 +541,28 @@ function App() {
   }
 
   function playAgain() {
+    autoSubmitStartedRef.current = false;
+
     setName("");
     setFirstName("");
     setLastName("");
+
     sessionStorage.removeItem("birthdayQuizName");
     sessionStorage.removeItem("birthdayQuizFirstName");
     sessionStorage.removeItem("birthdayQuizLastName");
     sessionStorage.removeItem("birthdayQuizResult");
     sessionStorage.removeItem("birthdayQuizReservationToken");
+    sessionStorage.removeItem(QUIZ_DEADLINE_KEY);
+
     setReservationToken("");
     setCurrentPath("/");
     setAnswers({});
+    setTimeLeft(5);
     setResult(null);
     setError("");
     setShowIncompletePopup(false);
+    setShowAlreadyPlayedPopup(false);
+
     window.history.pushState({}, "", "/");
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -340,10 +570,11 @@ function App() {
   function goToLeaderboard() {
     window.history.pushState({}, "", "/leaderboard");
     setCurrentPath("/leaderboard");
+
     window.scrollTo({ top: 0, behavior: "smooth" });
+
     loadScores();
   }
-
 
   if (loading) {
     return (
@@ -360,21 +591,31 @@ function App() {
         </div>
 
         <section className="birthday-loading-card">
-          <div className="loading-decoration loading-decoration-left" aria-hidden="true">
+          <div
+            className="loading-decoration loading-decoration-left"
+            aria-hidden="true"
+          >
             🎈
           </div>
-          <div className="loading-decoration loading-decoration-right" aria-hidden="true">
+
+          <div
+            className="loading-decoration loading-decoration-right"
+            aria-hidden="true"
+          >
             🎁
           </div>
 
           <div className="loading-cake-wrap">
             <div className="loading-cake-glow"></div>
+
             <span className="loading-cake" aria-hidden="true">
               🎂
             </span>
           </div>
 
-          <p className="loading-eyebrow">✨ GETTING THE PARTY READY ✨</p>
+          <p className="loading-eyebrow">
+            ✨ GETTING THE PARTY READY ✨
+          </p>
 
           <h1 className="loading-title">
             Birthday <span>Quiz!</span>
@@ -405,7 +646,6 @@ function App() {
       </main>
     );
   }
-
 
   return (
     <>
@@ -457,7 +697,18 @@ function App() {
         <span className="sparkle-dot">💫</span>
       </div>
 
-      <main className="page-shell">
+      {/* Floating timer outside the quiz card */}
+      {isQuizPage && (
+        <div
+          className={`quiz-timer ${timeLeft <= 60 ? "timer-warning" : ""}`}
+          aria-live="off"
+        >
+          ⏱️ {Math.floor(timeLeft / 60)}:
+          {String(timeLeft % 60).padStart(2, "0")}
+        </div>
+      )}
+
+      <main className="page-shell" inert={isTimeExpired}>
         <header className="hero">
           {/* Party decorations on the sides of the hero */}
           <div className="hero-party-left" aria-hidden="true">
@@ -465,33 +716,38 @@ function App() {
             <span>🎁</span>
             <span>🎊</span>
           </div>
+
           <div className="hero-party-right" aria-hidden="true">
             <span>🎀</span>
             <span>🎉</span>
             <span>🎈</span>
           </div>
 
-          <span className="eyebrow">🎂 A SPECIAL DAY • A FUN CHALLENGE 🎂</span>
+          <span className="eyebrow">
+            🎂 A SPECIAL DAY • A FUN CHALLENGE 🎂
+          </span>
 
           <h1>
-             <span>How Well Do You Know </span> Richard 
+            <span>How Well Do You Know </span> Richard
           </h1>
 
           <p>
-          🥳 Think you know Richard pretty well? Let's have some fun! Choose one player from your table, answer the birthday questions and see which table knows Richard best! 🏆
+            🥳 Think you know Richard pretty well? Let's have some fun! Choose
+            one player from your table, answer the birthday questions and see
+            which table knows Richard best! 🏆
           </p>
 
           {!isLeaderboardPage && !isQuizPage && (
-  <div className="hero-actions">
-    <button
-      type="button"
-      className="leaderboard-nav-button"
-      onClick={goToLeaderboard}
-    >
-      🏆 View Leaderboard
-    </button>
-  </div>
-)}
+            <div className="hero-actions">
+              <button
+                type="button"
+                className="leaderboard-nav-button"
+                onClick={goToLeaderboard}
+              >
+                🏆 View Leaderboard
+              </button>
+            </div>
+          )}
 
           <div className="hero-decoration" aria-hidden="true">
             <span>🎂</span>{" "}
@@ -502,94 +758,89 @@ function App() {
             <span>🎊</span>{" "}
             <span>🍰</span>
           </div>
-
-
         </header>
 
         {isWelcomePage && (
           <section className="welcome-card">
-            <div className="welcome-confetti" aria-hidden="true">🎈 ✨ 🎁 ✨ 🎈</div>
-            <div className="welcome-icon" aria-hidden="true">🎂</div>
+            <div className="welcome-confetti" aria-hidden="true">
+              🎈 ✨ 🎁 ✨ 🎈
+            </div>
+
+            <div className="welcome-icon" aria-hidden="true">
+              🎂
+            </div>
+
             <p className="eyebrow">🎀 BEFORE WE BEGIN 🎀</p>
+
             <h2>Which Table Are You From?</h2>
+
             <p className="welcome-description">
-              Enter your table number below to join the birthday challenge and compete for the top spot on the leaderboard! 🏆
+              Enter your table number below to join the birthday challenge and
+              compete for the top spot on the leaderboard! 🏆
             </p>
+
             <form className="welcome-form" onSubmit={startQuiz}>
               <div className="name-inputs-grid">
-                
                 <div className="name-field-group table-number-group">
-  <label className="field-label" htmlFor="welcome-first-name">
-    Table Number
-  </label>
-  <input
-    id="welcome-first-name"
-    className="name-input welcome-name-input"
-    type="number"
-    placeholder="Enter table number..."
-    value={firstName}
-    maxLength={25}
-    onChange={(event) => {
-      setFirstName(event.target.value);
-      if (error) setError("");
-    }}
-    autoComplete="off"
-    autoFocus
-    required
-  />
-</div>
+                  <label
+                    className="field-label"
+                    htmlFor="welcome-first-name"
+                  >
+                    Table Number
+                  </label>
 
-                {/* <div className="name-field-group">
-                  <label className="field-label" htmlFor="welcome-first-name">First name</label>
                   <input
                     id="welcome-first-name"
                     className="name-input welcome-name-input"
-                    type="text"
-                    placeholder="First name..."
+                    type="number"
+                    placeholder="Enter table number..."
                     value={firstName}
                     maxLength={25}
                     onChange={(event) => {
                       setFirstName(event.target.value);
+
                       if (error) setError("");
                     }}
-                    autoComplete="given-name"
+                    autoComplete="off"
                     autoFocus
                     required
                   />
                 </div>
-
-                <div className="name-field-group">
-                  <label className="field-label" htmlFor="welcome-last-name">Last name</label>
-                  <input
-                    id="welcome-last-name"
-                    className="name-input welcome-name-input"
-                    type="text"
-                    placeholder="Last name..."
-                    value={lastName}
-                    maxLength={25}
-                    onChange={(event) => {
-                      setLastName(event.target.value);
-                      if (error) setError("");
-                    }}
-                    autoComplete="family-name"
-                    required
-                  />
-                </div> */}
               </div>
 
-              {error && <p className="error-message" role="alert">⚠️ {error}</p>}
-              <button className="primary-button welcome-start-button" type="submit" disabled={starting}>
-                {starting ? "Reserving your table..." : "Start the Birthday Quiz"} <span aria-hidden="true">🎉</span>
+              {error && (
+                <p className="error-message" role="alert">
+                  ⚠️ {error}
+                </p>
+              )}
+
+              <button
+                className="primary-button welcome-start-button"
+                type="submit"
+                disabled={starting}
+              >
+                {starting
+                  ? "Reserving your table..."
+                  : "Start the Birthday Quiz"}{" "}
+                <span aria-hidden="true">🎉</span>
               </button>
             </form>
+
             <p className="welcome-footnote">
-              ✨ Ready Table, {firstName.trim() ? `${firstName.trim()}!` : "birthday star?"} Let the birthday challenge begin!
+              ✨ Ready Table,{" "}
+              {firstName.trim()
+                ? `${firstName.trim()}!`
+                : "birthday star?"}{" "}
+              Let the birthday challenge begin!
             </p>
           </section>
         )}
 
         {isQuizPage && (
-          <div className="content-grid" style={{ gridTemplateColumns: "minmax(0, 1fr)" }}>
+          <div
+            className="content-grid"
+            style={{ gridTemplateColumns: "minmax(0, 1fr)" }}
+          >
             <section className="quiz-card">
               <div className="section-heading">
                 <div>
@@ -597,23 +848,35 @@ function App() {
                   <h2>Birthday Challenge 🎂</h2>
                 </div>
 
-                <span className="question-count">
-                  🎯 {Object.keys(answers).length}/{questions.length} answered
-                </span>
+                <div className="quiz-header-info">
+                  <span className="question-count">
+                    🎯 {Object.keys(answers).length}/{questions.length} answered
+                  </span>
+                </div>
               </div>
 
               {/* Mobile Game Progress Bar */}
-              <div className="quiz-progress-wrap" aria-label="Quiz progress">
+              <div
+                className="quiz-progress-wrap"
+                aria-label="Quiz progress"
+              >
                 <div
                   className="quiz-progress-bar"
                   style={{
-                    width: `${questions.length ? (Object.keys(answers).length / questions.length) * 100 : 0}%`
+                    width: `${
+                      questions.length
+                        ? (Object.keys(answers).length / questions.length) *
+                          100
+                        : 0
+                    }%`,
                   }}
                 />
               </div>
 
               <form onSubmit={submitQuiz}>
-                <p className="player-greeting">🎀 Playing as <strong>{name}</strong></p>
+                <p className="player-greeting">
+                  🎀 Playing as <strong>{name}</strong>
+                </p>
 
                 {questions.map((question, questionIndex) => (
                   <fieldset
@@ -637,8 +900,9 @@ function App() {
                         return (
                           <label
                             key={optionIndex}
-                            className={`option-card ${selected ? "selected" : ""
-                              }`}
+                            className={`option-card ${
+                              selected ? "selected" : ""
+                            }`}
                           >
                             <input
                               type="radio"
@@ -646,7 +910,7 @@ function App() {
                               value={optionIndex}
                               checked={selected}
                               onChange={() =>
-                                chooseAnswer(question.id, optionIndex, questionIndex)
+                                chooseAnswer(question.id, optionIndex)
                               }
                             />
 
@@ -672,9 +936,15 @@ function App() {
                   id="quiz-submit-btn"
                   className="primary-button submit-button"
                   type="submit"
-                  disabled={submitting || questions.length === 0}
+                  disabled={
+                    submitting ||
+                    questions.length === 0 ||
+                    isTimeExpired
+                  }
                 >
-                  {submitting ? "✨ Submitting..." : "🎉 Submit my answers 🎉"}
+                  {submitting
+                    ? "✨ Submitting..."
+                    : "🎉 Submit my answers 🎉"}
                 </button>
               </form>
             </section>
@@ -682,7 +952,14 @@ function App() {
         )}
 
         {isResultPage && (
-          <div className="content-grid" style={{ gridTemplateColumns: "minmax(0, 1fr)", maxWidth: "800px", margin: "28px auto 0" }}>
+          <div
+            className="content-grid"
+            style={{
+              gridTemplateColumns: "minmax(0, 1fr)",
+              maxWidth: "800px",
+              margin: "28px auto 0",
+            }}
+          >
             <section className="quiz-card result-screen-card">
               <div className="result-panel">
                 <div className="result-emoji" aria-hidden="true">
@@ -698,7 +975,10 @@ function App() {
                 </div>
 
                 <p className="eyebrow">🌟 QUIZ COMPLETED 🌟</p>
-                <h2>Well done, {result ? result.name : (name || "Player")}! 🎉</h2>
+
+                <h2>
+                  Well done, {result ? result.name : name || "Player"}! 🎉
+                </h2>
 
                 {result && (
                   <div className="score-circle">
@@ -709,21 +989,23 @@ function App() {
                   </div>
                 )}
 
-               {result && (
-  <p>
-    {(() => {
-      const percentage = result.total
-        ? Math.round((result.score / result.total) * 100)
-        : 0;
+                {result && (
+                  <p>
+                    {(() => {
+                      const percentage = result.total
+                        ? Math.round(
+                            (result.score / result.total) * 100
+                          )
+                        : 0;
 
-      return percentage === 100
-        ? "Amazing! Your table knows our birthday star so well! 🏆🎉"
-        : percentage >= 60
-        ? "Great effort! Your table is in the birthday challenge! 🥳"
-        : "Nice try! Every answer makes this birthday more fun! 🎂";
-    })()}
-  </p>
-)}
+                      return percentage === 100
+                        ? "Amazing! Your table knows our birthday star so well! 🏆🎉"
+                        : percentage >= 60
+                          ? "Great effort! Your table is in the birthday challenge! 🥳"
+                          : "Nice try! Every answer makes this birthday more fun! 🎂";
+                    })()}
+                  </p>
+                )}
 
                 <div className="result-party-row" aria-hidden="true">
                   <span>🍰</span>
@@ -734,13 +1016,6 @@ function App() {
                 </div>
 
                 <div className="result-actions-row">
-                    {/* <button
-                      className="primary-button"
-                      onClick={playAgain}
-                    >
-                      🎈 Take the quiz again 🎈
-                    </button> */}
-
                   <button
                     className="leaderboard-nav-button result-leaderboard-button"
                     type="button"
@@ -755,93 +1030,103 @@ function App() {
         )}
 
         {isLeaderboardPage && (
-          <>
-           
-
-            <div
-              className="content-grid leaderboard-page-grid"
-              style={{ gridTemplateColumns: "minmax(0, 1fr)", maxWidth: "900px", marginLeft: "auto", marginRight: "auto" }}
-            >
-              <aside className="leaderboard-card">
-                <div className="section-heading">
-                  <div>
-                    <p className="eyebrow">⭐ TOP PLAYERS</p>
-                    <h2>Leaderboard</h2>
-                  </div>
-
-                  <span className="trophy-icon" aria-hidden="true">
-                    🏆
-                  </span>
+          <div
+            className="content-grid leaderboard-page-grid"
+            style={{
+              gridTemplateColumns: "minmax(0, 1fr)",
+              maxWidth: "900px",
+              marginLeft: "auto",
+              marginRight: "auto",
+            }}
+          >
+            <aside className="leaderboard-card">
+              <div className="section-heading">
+                <div>
+                  <p className="eyebrow">⭐ TOP PLAYERS</p>
+                  <h2>Leaderboard</h2>
                 </div>
 
-                <p className="leaderboard-description">
-                  🎈 The best scores from everyone who has played!
+                <span className="trophy-icon" aria-hidden="true">
+                  🏆
+                </span>
+              </div>
+
+              <p className="leaderboard-description">
+                🎈 The best scores from everyone who has played!
+              </p>
+
+              <button
+                className="refresh-button"
+                type="button"
+                onClick={loadScores}
+              >
+                ↻ Refresh scores ✨
+              </button>
+
+              {leaderboardError && (
+                <p className="error-message" role="alert">
+                  {leaderboardError}
                 </p>
+              )}
 
-                <button
-                  className="refresh-button"
-                  type="button"
-                  onClick={loadScores}
-                >
-                  ↻ Refresh scores ✨
-                </button>
+              {!leaderboardError && scores.length === 0 ? (
+                <div className="empty-state">
+                  <span aria-hidden="true">🎈</span>
+                  <p>No scores yet!</p>
+                  <small>🎁 Be the first to complete the quiz!</small>
+                </div>
+              ) : (
+                <ol className="leaderboard-list">
+                  {[...scores]
+                    .sort(
+                      (a, b) => Number(b.score) - Number(a.score)
+                    )
+                    .map((player, index) => (
+                      <li
+                        className="leaderboard-row"
+                        key={
+                          player.id ??
+                          `${player.name}-${player.createdAt ?? index}`
+                        }
+                      >
+                        <span className="rank">
+                          {index === 0
+                            ? "🥇"
+                            : index === 1
+                              ? "🥈"
+                              : index === 2
+                                ? "🥉"
+                                : `#${index + 1}`}
+                        </span>
 
-                {leaderboardError && (
-                  <p className="error-message" role="alert">
-                    {leaderboardError}
-                  </p>
-                )}
+                        <span className="player-info">
+                          <strong>{player.name}</strong>
 
-                {!leaderboardError && scores.length === 0 ? (
-                  <div className="empty-state">
-                    <span aria-hidden="true">🎈</span>
-                    <p>No scores yet!</p>
-                    <small>🎁 Be the first to complete the quiz!</small>
-                  </div>
-                ) : (
-                  <ol className="leaderboard-list">
-                    {[...scores]
-                      .sort((a, b) => Number(b.score) - Number(a.score))
-                      .map((player, index) => (
-                        <li
-                          className="leaderboard-row"
-                          key={player.id ?? `${player.name}-${player.createdAt ?? index}`}
-                        >
-                          <span className="rank">
-                            {index === 0
-                              ? "🥇"
-                              : index === 1
-                                ? "🥈"
-                                : index === 2
-                                  ? "🥉"
-                                  : `#${index + 1}`}
-                          </span>
+                          <small>
+                            {new Date(
+                              player.createdAt
+                            ).toLocaleDateString()}
+                          </small>
+                        </span>
 
-                          <span className="player-info">
-                            <strong>{player.name}</strong>
-                            <small>
-                              {new Date(player.createdAt).toLocaleDateString()}
-                            </small>
-                          </span>
+                        <span className="player-score">
+                          {player.score}/{player.total}
+                        </span>
+                      </li>
+                    ))}
+                </ol>
+              )}
 
-                          <span className="player-score">
-                            {player.score}/{player.total}
-                          </span>
-                        </li>
-                      ))}
-                  </ol>
-                )}
-
-                <p className="leaderboard-note">
-                  🎊 Scores are shared with other visitors to this website.
-                </p>
-              </aside>
-            </div>
-          </>
+              <p className="leaderboard-note">
+                🎊 Scores are shared with other visitors to this website.
+              </p>
+            </aside>
+          </div>
         )}
 
         <footer className="page-footer">
           Made for a special birthday <span aria-hidden="true">♥</span>
+
           <div className="footer-party" aria-hidden="true">
             <span>🎂</span>{" "}
             <span>🎈</span>{" "}
@@ -852,9 +1137,81 @@ function App() {
         </footer>
       </main>
 
+      {/* Time Expired Screen */}
+      {isTimeExpired && (
+        <div className="quiz-expired-overlay">
+          <div
+            className="quiz-expired-card"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="quiz-expired-title"
+          >
+            <div className="quiz-expired-icon">⏰</div>
+
+            <p className="eyebrow">QUIZ TIME FINISHED</p>
+
+            <h2 id="quiz-expired-title">Time's Up! 🎉</h2>
+
+            {submitting ? (
+              <p>
+                Your time has ended. Saving your answers and score...
+              </p>
+            ) : result ? (
+              <p>
+                Your score has been saved:{" "}
+                <strong>
+                  {result.score}/{result.total}
+                </strong>
+              </p>
+            ) : error ? (
+              <p className="error-message" role="alert">
+                ⚠️ {error}
+              </p>
+            ) : (
+              <p>
+                Your five-minute birthday challenge has ended.
+                Your answers are being submitted automatically.
+              </p>
+            )}
+
+            {result ? (
+              <p className="quiz-expired-instruction">
+                Your score is saved. You can now view the leaderboard.
+              </p>
+            ) : (
+              <p className="quiz-expired-instruction">
+                Please wait while we save your quiz.
+              </p>
+            )}
+
+            {!result && !submitting && error && (
+              <button
+                type="button"
+                className="primary-button"
+                onClick={retryAutoSubmit}
+              >
+                Retry Submission
+              </button>
+            )}
+
+            <button
+              type="button"
+              className="primary-button"
+              onClick={goToLeaderboard}
+              disabled={!result || submitting}
+            >
+              🏆 View Leaderboard
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Modal Popup for Incomplete Questions */}
-      {showIncompletePopup && (
-        <div className="modal-backdrop" onClick={() => setShowIncompletePopup(false)}>
+      {showIncompletePopup && !isTimeExpired && (
+        <div
+          className="modal-backdrop"
+          onClick={() => setShowIncompletePopup(false)}
+        >
           <div
             className="modal-box"
             role="dialog"
@@ -865,25 +1222,42 @@ function App() {
             <div className="modal-icon" aria-hidden="true">
               🎂 🎈
             </div>
+
             <h3 id="incomplete-popup-title">Hold on! 🎉</h3>
+
             <p className="modal-message">
               Please answer every question before submitting.
             </p>
+
             <p className="modal-progress-hint">
-              You answered <strong>{Object.keys(answers).length}</strong> of <strong>{questions.length}</strong> questions!
+              You answered <strong>{Object.keys(answers).length}</strong> of{" "}
+              <strong>{questions.length}</strong> questions!
             </p>
+
             <button
               className="primary-button modal-btn"
               type="button"
               autoFocus
               onClick={() => {
                 setShowIncompletePopup(false);
-                // Scroll to the first unanswered question
-                const firstUnanswered = questions.find((q) => answers[q.id] === undefined);
+
+                // Scroll to the first unanswered question when requested.
+                const firstUnanswered = questions.find(
+                  (q) => answers[q.id] === undefined
+                );
+
                 if (firstUnanswered) {
-                  const el = document.getElementsByName(firstUnanswered.id)[0];
+                  const el = document.getElementsByName(
+                    firstUnanswered.id
+                  )[0];
+
                   if (el) {
-                    el.closest(".question-block")?.scrollIntoView({ behavior: "smooth", block: "center" });
+                    el
+                      .closest(".question-block")
+                      ?.scrollIntoView({
+                        behavior: "smooth",
+                        block: "center",
+                      });
                   }
                 }
               }}
@@ -896,7 +1270,10 @@ function App() {
 
       {/* Modal Popup for Table Number Already Played */}
       {showAlreadyPlayedPopup && (
-        <div className="modal-backdrop" onClick={() => setShowAlreadyPlayedPopup(false)}>
+        <div
+          className="modal-backdrop"
+          onClick={() => setShowAlreadyPlayedPopup(false)}
+        >
           <div
             className="modal-box"
             role="dialog"
@@ -907,14 +1284,28 @@ function App() {
             <div className="modal-icon" aria-hidden="true">
               🚫 🍽️
             </div>
-            <h3 id="already-played-popup-title">Table Unavailable!</h3>
+
+            <h3 id="already-played-popup-title">
+              Table Unavailable!
+            </h3>
+
             <p className="modal-message">
-              Table {firstName.trim()} has already submitted a score or another player is currently using it.
+              Table {firstName.trim()} has already submitted a score or
+              another player is currently using it.
             </p>
+
             <p className="modal-progress-hint">
               Each table can participate only once. Check the leaderboard! 🏆
             </p>
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px", width: "100%" }}>
+
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "10px",
+                width: "100%",
+              }}
+            >
               <button
                 className="primary-button modal-btn"
                 type="button"
@@ -926,10 +1317,14 @@ function App() {
               >
                 🏆 View Leaderboard
               </button>
+
               <button
                 className="leaderboard-nav-button"
                 type="button"
-                style={{ width: "100%", justifyContent: "center" }}
+                style={{
+                  width: "100%",
+                  justifyContent: "center",
+                }}
                 onClick={() => setShowAlreadyPlayedPopup(false)}
               >
                 Close
