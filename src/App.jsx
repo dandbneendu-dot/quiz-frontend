@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import "./App.css";
 import API_URL from "./config";
 
-const QUIZ_DURATION = 5 * 1000;
+const QUIZ_DURATION = 5 * 60 * 1000;
 const QUIZ_DEADLINE_KEY = "birthdayQuizDeadline";
 
 function App() {
@@ -43,7 +43,7 @@ function App() {
       sessionStorage.getItem(QUIZ_DEADLINE_KEY)
     );
 
-    if (!deadline) return 5;
+    if (!deadline) return 300;
 
     return Math.max(
       0,
@@ -429,7 +429,7 @@ function App() {
         String(deadline)
       );
 
-      setTimeLeft(5);
+      setTimeLeft(300);
 
       window.history.pushState({}, "", "/quiz");
       setCurrentPath("/quiz");
@@ -557,7 +557,7 @@ function App() {
     setReservationToken("");
     setCurrentPath("/");
     setAnswers({});
-    setTimeLeft(5);
+    setTimeLeft(300);
     setResult(null);
     setError("");
     setShowIncompletePopup(false);
