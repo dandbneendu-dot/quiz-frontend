@@ -471,28 +471,27 @@ function App() {
             <span>🎈</span>
           </div>
 
-          <span className="eyebrow">🎂 A SPECIAL DAY • A FUN QUIZ 🎂</span>
+          <span className="eyebrow">🎂 A SPECIAL DAY • A FUN CHALLENGE 🎂</span>
 
           <h1>
-            Birthday <span>Quiz!</span>
+             <span>How Well Do You Know </span> Richard 
           </h1>
 
           <p>
-           🥳 Ready for the Birthday Quiz Challenge? 
-           Choose one player from your table, answer the questions, and see if your table can top the leaderboard! 🏆
+          🥳 Think you know Richard pretty well? Let's have some fun! Choose one player from your table, answer the birthday questions and see which table knows Richard best! 🏆
           </p>
 
-          {!isLeaderboardPage && (
-            <div className="hero-actions">
-              <button
-                type="button"
-                className="leaderboard-nav-button"
-                onClick={goToLeaderboard}
-              >
-                🏆 View Leaderboard
-              </button>
-            </div>
-          )}
+          {!isLeaderboardPage && !isQuizPage && (
+  <div className="hero-actions">
+    <button
+      type="button"
+      className="leaderboard-nav-button"
+      onClick={goToLeaderboard}
+    >
+      🏆 View Leaderboard
+    </button>
+  </div>
+)}
 
           <div className="hero-decoration" aria-hidden="true">
             <span>🎂</span>{" "}
