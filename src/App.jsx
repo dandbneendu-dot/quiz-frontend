@@ -734,7 +734,7 @@ function App() {
   {/* Richard's Birthday Photo */}
   <div className="hero-photo">
     <img
-      src="/photo.jpeg"
+      src="/phot1.png"
       alt="Richard's birthday celebration"
     />
   </div>
