@@ -1146,7 +1146,7 @@ function App() {
               )}
 
               <p className="leaderboard-note">
-                🎊 Scores are shared with other visitors to this website.
+                
               </p>
             </aside>
           </div>
