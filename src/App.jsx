@@ -709,56 +709,64 @@ function App() {
       )}
 
       <main className="page-shell" inert={isTimeExpired}>
-        <header className="hero">
-          {/* Party decorations on the sides of the hero */}
-          <div className="hero-party-left" aria-hidden="true">
-            <span>🎈</span>
-            <span>🎁</span>
-            <span>🎊</span>
-          </div>
+       <header className="hero">
+  {/* Party decorations on the sides of the hero */}
+  <div className="hero-party-left" aria-hidden="true">
+    <span>🎈</span>
+    <span>🎁</span>
+    <span>🎊</span>
+  </div>
 
-          <div className="hero-party-right" aria-hidden="true">
-            <span>🎀</span>
-            <span>🎉</span>
-            <span>🎈</span>
-          </div>
+  <div className="hero-party-right" aria-hidden="true">
+    <span>🎀</span>
+    <span>🎉</span>
+    <span>🎈</span>
+  </div>
 
-          <span className="eyebrow">
-            🎂 A SPECIAL DAY • A FUN CHALLENGE 🎂
-          </span>
+  <span className="eyebrow">
+    🎂 A SPECIAL DAY • A FUN CHALLENGE 🎂
+  </span>
 
-          <h1>
-            <span>How Well Do You Know </span> Richard
-          </h1>
+  <h1>
+    <span>How Well Do You Know </span> Richard
+  </h1>
 
-          <p>
-            🥳 Think you know Richard pretty well? Let's have some fun! Choose
-            one player from your table, answer the birthday questions and see
-            which table knows Richard best! 🏆
-          </p>
+  {/* Richard's Birthday Photo */}
+  <div className="hero-photo">
+    <img
+      src="/photo.jpeg"
+      alt="Richard's birthday celebration"
+    />
+  </div>
 
-          {!isLeaderboardPage && !isQuizPage && (
-            <div className="hero-actions">
-              <button
-                type="button"
-                className="leaderboard-nav-button"
-                onClick={goToLeaderboard}
-              >
-                🏆 View Leaderboard
-              </button>
-            </div>
-          )}
+  <p>
+    🥳 Think you know Richard pretty well? Let's have some fun! Choose
+    one player from your table, answer the birthday questions and see
+    which table knows Richard best! 🏆
+  </p>
 
-          <div className="hero-decoration" aria-hidden="true">
-            <span>🎂</span>{" "}
-            <span>🎈</span>{" "}
-            <span>🎉</span>{" "}
-            <span>🎁</span>{" "}
-            <span>🎀</span>{" "}
-            <span>🎊</span>{" "}
-            <span>🍰</span>
-          </div>
-        </header>
+  {!isLeaderboardPage && !isQuizPage && (
+    <div className="hero-actions">
+      <button
+        type="button"
+        className="leaderboard-nav-button"
+        onClick={goToLeaderboard}
+      >
+        🏆 View Leaderboard
+      </button>
+    </div>
+  )}
+
+  <div className="hero-decoration" aria-hidden="true">
+    <span>🎂</span>{" "}
+    <span>🎈</span>{" "}
+    <span>🎉</span>{" "}
+    <span>🎁</span>{" "}
+    <span>🎀</span>{" "}
+    <span>🎊</span>{" "}
+    <span>🍰</span>
+  </div>
+</header>
 
         {isWelcomePage && (
           <section className="welcome-card">
