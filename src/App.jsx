@@ -4,6 +4,7 @@ import API_URL from "./config";
 
 const QUIZ_DURATION = 5 * 60 * 1000;
 const QUIZ_DEADLINE_KEY = "birthdayQuizDeadline";
+const QUIZ_ANSWERS_KEY = "birthdayQuizAnswers";
 
 function App() {
   const [questions, setQuestions] = useState([]);
@@ -35,7 +36,16 @@ function App() {
     () => window.location.pathname.replace(/\/$/, "") || "/"
   );
 
-  const [answers, setAnswers] = useState({});
+  // Restore selected answers when the player refreshes the quiz page.
+  const [answers, setAnswers] = useState(() => {
+    try {
+      const savedAnswers = sessionStorage.getItem(QUIZ_ANSWERS_KEY);
+      return savedAnswers ? JSON.parse(savedAnswers) : {};
+    } catch {
+      sessionStorage.removeItem(QUIZ_ANSWERS_KEY);
+      return {};
+    }
+  });
 
   // Restore the remaining time when the page is refreshed.
   const [timeLeft, setTimeLeft] = useState(() => {
@@ -244,10 +254,16 @@ function App() {
   function chooseAnswer(questionId, optionIndex) {
     if (isTimeExpired) return;
 
-    setAnswers((current) => ({
-      ...current,
+    const updatedAnswers = {
+      ...answers,
       [questionId]: optionIndex,
-    }));
+    };
+
+    setAnswers(updatedAnswers);
+    sessionStorage.setItem(
+      QUIZ_ANSWERS_KEY,
+      JSON.stringify(updatedAnswers)
+    );
   }
 
   // Automatically submit the answers selected before time expires.
@@ -295,6 +311,7 @@ function App() {
         "birthdayQuizResult",
         JSON.stringify(data.result)
       );
+      sessionStorage.removeItem(QUIZ_ANSWERS_KEY);
 
       // Clear the timer and reservation after successful submission.
       sessionStorage.removeItem(QUIZ_DEADLINE_KEY);
@@ -419,6 +436,7 @@ function App() {
       autoSubmitStartedRef.current = false;
 
       setAnswers({});
+      sessionStorage.removeItem(QUIZ_ANSWERS_KEY);
       setResult(null);
 
       // Start a fresh five-minute timer only after reservation succeeds.
@@ -522,6 +540,7 @@ function App() {
         "birthdayQuizResult",
         JSON.stringify(data.result)
       );
+      sessionStorage.removeItem(QUIZ_ANSWERS_KEY);
 
       // Clear the timer after successful submission.
       sessionStorage.removeItem(QUIZ_DEADLINE_KEY);
@@ -553,6 +572,7 @@ function App() {
     sessionStorage.removeItem("birthdayQuizResult");
     sessionStorage.removeItem("birthdayQuizReservationToken");
     sessionStorage.removeItem(QUIZ_DEADLINE_KEY);
+    sessionStorage.removeItem(QUIZ_ANSWERS_KEY);
 
     setReservationToken("");
     setCurrentPath("/");
